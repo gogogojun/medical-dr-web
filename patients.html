@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ko">
+<head>
+     <meta charset="utf-8">
+     <title>MedAdmin • 환자 목록</title>
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧬</text></svg>">
+     <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50">
+<!-- Top bar -->
+<header class="sticky top-0 z-10 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-slate-200">
+     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+               <div class="h-9 w-9 rounded-xl bg-teal-600/10 grid place-items-center">🩺</div>
+               <h1 class="text-lg font-semibold text-slate-900">MedAdmin</h1>
+               <span class="text-slate-400">/</span>
+               <span class="text-slate-600">환자 목록</span>
+          </div>
+          <div class="flex items-center gap-2">
+               <button id="logout" class="text-sm text-slate-500 hover:text-rose-600">로그아웃</button>
+          </div>
+     </div>
+</header>
+
+<!-- Content -->
+<main class="max-w-7xl mx-auto px-4 py-6">
+     <!-- Search + Controls -->
+     <div class="mb-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div class="lg:col-span-2 flex gap-2">
+               <input id="q" placeholder="이름/전화/이메일 검색…" class="w-full rounded-xl border-slate-300 focus:border-teal-600 focus:ring-teal-600" />
+               <button id="s" class="rounded-xl bg-teal-600 px-4 text-white font-medium hover:bg-teal-700 transition">검색</button>
+          </div>
+          <div class="flex items-center justify-end gap-2 text-sm text-slate-600">
+               <label>표시</label>
+               <select id="limit" class="rounded-xl border-slate-300 focus:border-teal-600 focus:ring-teal-600">
+                    <option>20</option><option selected>50</option><option>100</option>
+               </select>
+               <label class="ml-4">정렬</label>
+               <select id="sort" class="rounded-xl border-slate-300 focus:border-teal-600 focus:ring-teal-600">
+                    <option value="asc" selected>ID 오름차순</option>
+                    <option value="desc">ID 내림차순</option>
+               </select>
+          </div>
+     </div>
+
+     <!-- Layout: table + detail -->
+     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Table card -->
+          <div class="lg:col-span-2 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
+               <div class="relative">
+                    <div id="loading" class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 animate-pulse hidden"></div>
+                    <div class="overflow-x-auto">
+                         <table class="w-full text-sm">
+                              <thead class="bg-slate-50 text-slate-500">
+                              <tr class="border-b border-slate-200">
+                                   <th class="px-4 py-3 text-left">ID</th>
+                                   <th class="px-4 py-3 text-left">이름</th>
+                                   <th class="px-4 py-3 text-left">성별</th>
+                                   <th class="px-4 py-3 text-left">생년월일</th>
+                                   <th class="px-4 py-3 text-left">전화</th>
+                                   <th class="px-4 py-3 text-left">이메일</th>
+                              </tr>
+                              </thead>
+                              <tbody id="tbody" class="[&>tr:nth-child(even)]:bg-slate-50/40">
+                              <!-- rows -->
+                              </tbody>
+                         </table>
+                    </div>
+
+                    <div id="empty" class="hidden p-10 text-center text-slate-500">
+                         검색 결과가 없습니다.
+                    </div>
+                    <div id="error" class="hidden p-4 text-rose-700 bg-rose-50 border-t border-rose-200">
+                         데이터를 불러오는 중 오류가 발생했습니다.
+                    </div>
+               </div>
+
+               <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200">
+                    <div class="text-xs text-slate-500" id="meta"></div>
+                    <div class="flex gap-2">
+                         <button id="prev" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">이전</button>
+                         <button id="next" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">다음</button>
+                    </div>
+               </div>
+          </div>
+
+          <!-- Detail panel -->
+          <aside class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
+               <div class="px-5 py-4 border-b border-slate-200">
+                    <h2 class="text-base font-semibold text-slate-900">상세 정보</h2>
+                    <p class="text-xs text-slate-500" id="detail-sub">행을 선택하면 상세가 표시됩니다.</p>
+               </div>
+               <div id="detail" class="p-5 text-sm text-slate-700 space-y-2">
+                    <!-- filled dynamically -->
+                    <div class="text-slate-400">선택된 환자가 없습니다.</div>
+               </div>
+          </aside>
+     </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+     const API_BASE = (window.API_BASE_URL || 'http://localhost:8080').replace(/\/+$/,'');
+     const token = localStorage.getItem('token'); if(!token) location.href='login.html';
+
+     // 보여줄 ID 범위
+     const ID_MIN = 1, ID_MAX = 500;
+
+     const qs = (s)=>document.querySelector(s);
+     const tbody = qs('#tbody');
+     const loading = qs('#loading');
+     const empty = qs('#empty');
+     const errorBox = qs('#error');
+     const meta = qs('#meta');
+     const detail = qs('#detail');
+     const detailSub = qs('#detail-sub');
+     const btnPrev = qs('#prev');
+     const btnNext = qs('#next');
+
+     let offset = 0;
+     let limit  = Number(qs('#limit')?.value || 50);
+     let total  = 0;
+     let maxOffset = 0;
+     let selectedId = null;
+
+     function fmtDate(d){ return (d||'').slice(0,10); }
+     function genderBadge(g){
+       // ✅ 기타/그 외 값은 표시하지 않음(남/여만)
+       if (g === 'M') return `<span class="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 text-xs">남</span>`;
+       if (g === 'F') return `<span class="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 text-xs">여</span>`;
+       return '<span class="text-slate-400">-</span>';
+     }
+
+     async function fjson(url){
+       const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token }});
+       if (r.status === 401) { localStorage.removeItem('token'); location.href='login.html'; return null; }
+       if (!r.ok) throw new Error(`HTTP ${r.status}`);
+       return r.json();
+     }
+
+     async function refreshTotal(search='') {
+       const u = `${API_BASE}/api/patients/count?min_id=${ID_MIN}&max_id=${ID_MAX}&search=${encodeURIComponent(search)}`;
+       const data = await fjson(u);
+       total = Number(data?.total || 0);
+       limit = Number(qs('#limit')?.value || 50);
+       maxOffset = Math.max(0, total - limit);
+       if (offset > maxOffset) offset = maxOffset;
+       btnPrev.disabled = (offset <= 0);
+       btnNext.disabled = (offset >= maxOffset);
+     }
+
+     function renderDetail(p){
+       if(!p){ detail.innerHTML = `<div class="text-slate-400">선택된 환자가 없습니다.</div>`; detailSub.textContent='행을 선택하면 상세가 표시됩니다.'; return; }
+       detailSub.textContent = `ID ${p.patient_id}`;
+       detail.innerHTML = `
+         <div class="grid grid-cols-3 gap-2">
+           <div class="text-slate-500">이름</div><div class="col-span-2">${p.full_name||''}</div>
+           <div class="text-slate-500">성별</div><div class="col-span-2">${((p.gender_display ?? p.gender)==='M'?'남':((p.gender_display ?? p.gender)==='F'?'여':'-'))}</div>
+           <div class="text-slate-500">생년월일</div><div class="col-span-2">${fmtDate(p.birth_date)}</div>
+           <div class="text-slate-500">전화</div><div class="col-span-2">${p.phone||''}</div>
+           <div class="text-slate-500">이메일</div><div class="col-span-2">${p.email||''}</div>
+           <div class="text-slate-500">주소</div><div class="col-span-2">${p.address||''}</div>
+           <div class="text-slate-500">혈액형</div><div class="col-span-2">${p.blood_type||''}</div>
+           <div class="text-slate-500">알레르기</div><div class="col-span-2 whitespace-pre-wrap">${p.allergies||''}</div>
+           <div class="text-slate-500">기저질환</div><div class="col-span-2 whitespace-pre-wrap">${p.conditions||''}</div>
+           <div class="text-slate-500">복용약</div><div class="col-span-2 whitespace-pre-wrap">${p.medications||''}</div>
+         </div>`;
+     }
+
+     async function load(search=''){
+       loading.classList.remove('hidden'); errorBox.classList.add('hidden'); empty.classList.add('hidden');
+       try{
+         // 총 개수 계산 (마지막 페이지 계산용)
+         await refreshTotal(search);
+
+         // 목록 호출: ID 1~500, 오름차순, 현재 offset/limit
+         const url = `${API_BASE}/api/patients?order=asc&min_id=${ID_MIN}&max_id=${ID_MAX}&limit=${limit}&offset=${offset}&search=${encodeURIComponent(search)}`;
+         const rows = await fjson(url);
+         if (!rows) return;
+
+         // 테이블 렌더
+         tbody.innerHTML = '';
+         for (const p of rows) {
+           const tr = document.createElement('tr');
+           tr.className = "border-b border-slate-200 hover:bg-teal-50/40 cursor-pointer";
+           tr.innerHTML = `
+             <td class="px-4 py-3 text-slate-700">${p.patient_id}</td>
+             <td class="px-4 py-3 font-medium text-slate-900">${p.full_name||''}</td>
+             <td class="px-4 py-3">${genderBadge(p.gender_display ?? p.gender)}</td>
+             <td class="px-4 py-3 text-slate-700">${fmtDate(p.birth_date)}</td>
+             <td class="px-4 py-3 text-slate-700">${p.phone||''}</td>
+             <td class="px-4 py-3 text-slate-700">${p.email||''}</td>`;
+           tr.onclick = async () => {
+             const detailData = await fjson(`${API_BASE}/api/patients/${p.patient_id}`).catch(()=>null) || p;
+             // 선택 하이라이트
+             for (const r of tbody.querySelectorAll('tr')) r.classList.remove('bg-teal-50/70');
+             tr.classList.add('bg-teal-50/70');
+             renderDetail(detailData);
+           };
+           tbody.appendChild(tr);
+         }
+
+         empty.classList.toggle('hidden', rows.length !== 0);
+         meta.textContent = `offset ${offset} · showing ${rows.length} / total ${total} · ID ${ID_MIN}~${ID_MAX}`;
+
+         // 버튼 활성/비활성
+         btnPrev.disabled = (offset <= 0);
+         btnNext.disabled = (offset >= maxOffset);
+
+         // 첫 로드 자동 상세
+         if (rows.length) {
+           const first = tbody.querySelector('tr');
+           if (first) first.click();
+         }
+
+       }catch(e){
+         console.error(e);
+         errorBox.classList.remove('hidden');   // 화면의 빨간 박스
+       }finally{
+         loading.classList.add('hidden');
+       }
+     }
+
+     // 핸들러
+     qs('#s').onclick = ()=>{ offset = 0; load(qs('#q').value); };
+     qs('#limit').onchange = ()=>{ offset = 0; load(qs('#q').value); };
+     qs('#prev').onclick = ()=>{ if (offset <= 0) return; offset = Math.max(0, offset - limit); load(qs('#q').value); };
+     qs('#next').onclick = ()=>{ if (offset >= maxOffset) return; offset = Math.min(maxOffset, offset + limit); load(qs('#q').value); };
+     qs('#logout').onclick = ()=>{ localStorage.removeItem('token'); location.href='login.html'; };
+
+     load();
+</script>
+
+</body>
+</html>

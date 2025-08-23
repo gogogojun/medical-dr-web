@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>MedAdmin • 로그인</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩺</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50">
+<div class="flex min-h-screen items-center justify-center p-6">
+    <div class="w-full max-w-md">
+        <!-- Logo / Brand -->
+        <div class="mb-6 text-center">
+            <div class="mx-auto mb-2 h-14 w-14 rounded-2xl bg-teal-600/10 grid place-items-center">
+                <span class="text-3xl">🩺</span>
+            </div>
+            <h1 class="text-2xl font-semibold text-slate-900">MedAdmin</h1>
+            <p class="text-slate-500 text-sm mt-1">의료 데이터 관리 콘솔</p>
+        </div>
+
+        <!-- Card -->
+        <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
+            <form id="f" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">아이디</label>
+                    <input name="username" required
+                           class="mt-1 w-full rounded-xl border-slate-300 focus:border-teal-600 focus:ring-teal-600" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">비밀번호</label>
+                    <input name="password" type="password" required
+                           class="mt-1 w-full rounded-xl border-slate-300 focus:border-teal-600 focus:ring-teal-600" />
+                </div>
+
+                <button
+                        class="w-full rounded-xl bg-teal-600 py-2.5 text-white font-medium hover:bg-teal-700 transition">
+                    로그인
+                </button>
+            </form>
+
+            <div id="err" class="hidden mt-4 rounded-xl bg-rose-50 text-rose-700 text-sm p-3">
+                로그인에 실패했습니다. 아이디/비밀번호를 확인하세요.
+            </div>
+        </div>
+
+        <p class="mt-6 text-center text-xs text-slate-400">
+            © 2025 MedAdmin
+        </p>
+    </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+    const API_BASE = (window.API_BASE_URL || 'http://localhost:8080').replace(/\/+$/,'');
+    document.getElementById('f').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = '로그인 중…';
+      document.getElementById('err').classList.add('hidden');
+      try {
+        const r = await fetch(`${API_BASE}/auth/login`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ username: fd.get('username'), password: fd.get('password') })
+        });
+        if (!r.ok) throw new Error('login failed');
+        const { token } = await r.json();
+        localStorage.setItem('token', token);
+        location.href = 'patients.html';
+      } catch (e2) {
+        document.getElementById('err').classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.textContent = '로그인';
+      }
+    });
+</script>
+</body>
+</html>
