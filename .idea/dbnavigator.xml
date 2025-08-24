@@ -6,11 +6,14 @@
   </component>
   <component name="DBNavigator.Project.DataEditorManager">
     <record-view-column-sorting-type value="BY_INDEX" />
-    <value-preview-text-wrapping value="true" />
+    <value-preview-text-wrapping value="false" />
     <value-preview-pinned value="false" />
   </component>
   <component name="DBNavigator.Project.DatabaseAssistantManager">
     <assistants>
+      <assistant-state connection-id="c0828c80-7a88-4e18-95ee-9b0f26961cf9" default-profile-name="" selected-conversation-id="" assistant-type="GENERIC" availability="UNAVAILABLE" acknowledgement="NONE">
+        <conversations />
+      </assistant-state>
       <assistant-state connection-id="7a7fae86-e3e1-4577-8b81-13a60e7aaa99" default-profile-name="" selected-conversation-id="" assistant-type="GENERIC" availability="UNAVAILABLE" acknowledgement="NONE">
         <conversations />
       </assistant-state>
@@ -26,24 +29,32 @@
     <connection id="7a7fae86-e3e1-4577-8b81-13a60e7aaa99">
       <console name="Connection" type="STANDARD" schema="med" session="Main"><![CDATA[SHOW PROCESSLIST;]]></console>
     </connection>
-    <connection id="948cf172-e576-4e36-a3c0-7cc24de962ba">
-      <console name="Connection 1" type="STANDARD" schema="mysql" session="Main" />
+    <connection id="c0828c80-7a88-4e18-95ee-9b0f26961cf9">
+      <console name="Connection 2" type="STANDARD" schema="med" session="Main"><![CDATA[UPDATE patient
+SET gender = IF(MOD(patient_id, 2) = 0, 'M', 'F')
+WHERE gender IS NULL OR gender NOT IN ('M','F');]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseEditorStateManager">
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files>
-      <object connection-id="7a7fae86-e3e1-4577-8b81-13a60e7aaa99" object-ref="consoles/Connection" />
-    </open-files>
+    <open-files />
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="7a7fae86-e3e1-4577-8b81-13a60e7aaa99" />
-    <connection id="948cf172-e576-4e36-a3c0-7cc24de962ba" />
+    <connection id="c0828c80-7a88-4e18-95ee-9b0f26961cf9" />
   </component>
   <component name="DBNavigator.Project.ExecutionManager">
     <retain-sticky-names value="false" />
+  </component>
+  <component name="DBNavigator.Project.MethodExecutionManager">
+    <method-browser />
+    <execution-history>
+      <group-entries value="true" />
+      <execution-inputs />
+    </execution-history>
+    <execution-variables-cache />
   </component>
   <component name="DBNavigator.Project.ObjectQuickFilterManager">
     <last-used-operator value="EQUAL" />
@@ -156,9 +167,9 @@
           </object-type-filter>
         </object-filters>
       </connection>
-      <connection source-id="" id="948cf172-e576-4e36-a3c0-7cc24de962ba" active="true" signed="true">
+      <connection source-id="" id="c0828c80-7a88-4e18-95ee-9b0f26961cf9" active="true" signed="true">
         <database>
-          <name value="Connection 1" />
+          <name value="Connection 2" />
           <description value="" />
           <database-type value="MYSQL" />
           <config-type value="BASIC" />
