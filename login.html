@@ -51,6 +51,20 @@
 </div>
 
 <script src="config.js"></script>
+<div id="who" style="position:fixed;top:12px;left:12px;background:#000;color:#fff;
+     padding:6px 10px;border-radius:999px;font:12px system-ui;z-index:9999"></div>
+<script>
+    async function poll(){
+      try{
+        const res = await fetch(`/theme/whoami.txt?t=${Date.now()}`, {cache:'no-store'});
+        const txt = await res.text();
+        document.getElementById('who').textContent = txt.trim() + ' • ' + (res.status||'ERR');
+      }catch(e){
+        document.getElementById('who').textContent = 'ERR';
+      }
+    }
+    poll(); setInterval(poll, 1000);
+</script>
 <script>
     const API_BASE = (window.API_BASE_URL || 'http://localhost:8080').replace(/\/+$/,'');
     document.getElementById('f').addEventListener('submit', async (e) => {
