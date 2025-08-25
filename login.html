@@ -52,15 +52,22 @@
 
 <script src="config.js"></script>
 <div id="who" style="position:fixed;top:12px;left:12px;background:#000;color:#fff;
-     padding:6px 10px;border-radius:999px;font:12px system-ui;z-index:9999"></div>
+  padding:6px 10px;border-radius:999px;font:12px system-ui;z-index:9999"></div>
+
 <script>
     async function poll(){
+      const badge = document.getElementById('who');
       try{
-        const res = await fetch(`/theme/whoami.txt?t=${Date.now()}`, {cache:'no-store'});
-        const txt = await res.text();
-        document.getElementById('who').textContent = txt.trim() + ' • ' + (res.status||'ERR');
+        const url = '/theme/whoami.txt?t=' + Date.now(); // 캐시 우회
+        const res = await fetch(url, { cache:'no-store' }); // 필요하면 method:'HEAD' 도 가능
+        if (!res.ok) { throw new Error(res.status); }
+
+        const txt = (await res.text()).trim().slice(0, 32); // 안전하게 32글자 제한
+        badge.textContent = `${txt} • ${res.status}`;
+        badge.style.background = '#000'; badge.style.color = '#fff';
       }catch(e){
-        document.getElementById('who').textContent = 'ERR';
+        badge.textContent = 'ORIGIN ERROR';
+        badge.style.background = '#fee2e2'; badge.style.color = '#991b1b';
       }
     }
     poll(); setInterval(poll, 1000);
