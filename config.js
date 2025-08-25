@@ -1,3 +1,3 @@
 <script>
-   window.API_BASE_URL = window.API_BASE_URL || "https://admin.nextcloudlab.com";
+   window.API_BASE_URL = "/api";
 </script>
