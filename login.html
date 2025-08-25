@@ -59,7 +59,7 @@
       const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = '로그인 중…';
       document.getElementById('err').classList.add('hidden');
       try {
-        const r = await fetch(`${API_BASE}/auth/login`, {
+        const r = await fetch(`${API_BASE}/api/auth/login`, {
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ username: fd.get('username'), password: fd.get('password') })
         });
