@@ -11,7 +11,7 @@ permissions:
 env:
   AWS_REGION: ap-northeast-2
   S3_BUCKET: medical-dr-web-pr   # 예: medical-dr-static-p
-  CF_DIST_ID: E3H9AIMSOLOCLE       # 선택(있으면 무효화)
+  CF_DIST_ID: ${{ secrets.CF_DIST_ID }}       # 선택(있으면 무효화)
   SRC_DIR: .                                  # 레포 최상단
 
 jobs:
